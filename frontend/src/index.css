@@ -1,0 +1,851 @@
+/* ---------------------------------------------------------------------- */
+/* Theme: dark-mode-first developer-tool aesthetic.                        */
+/* ---------------------------------------------------------------------- */
+:root {
+  --bg-0: #0d0f14;
+  /* page background */
+  --bg-1: #131620;
+  /* panel background */
+  --bg-2: #1a1e2b;
+  /* nested/inset background */
+  --bg-3: #222738;
+  /* hover/active surface */
+
+  --border: #2a2f40;
+  --border-strong: #3a4157;
+
+  --text: #c7cbd9;
+  --text-h: #f1f2f6;
+  --text-muted: #7d8298;
+
+  --accent: #5ec8f8;
+  /* current / active highlight */
+  --accent-strong: #8fe0ff;
+  --accent-bg: rgba(94, 200, 248, 0.16);
+  --accent-border: rgba(94, 200, 248, 0.55);
+
+  --visited: #7a6ff0;
+  /* visited highlight (second color) */
+  --visited-bg: rgba(122, 111, 240, 0.16);
+  --visited-border: rgba(122, 111, 240, 0.5);
+
+  --success: #4ade80;
+  --danger: #f87171;
+  --warning: #fbbf24;
+
+  --sans: 'Inter', system-ui, 'Segoe UI', Roboto, sans-serif;
+  --mono: 'JetBrains Mono', 'Fira Code', ui-monospace, Consolas, monospace;
+
+  color-scheme: dark;
+  font-family: var(--sans);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  background: var(--bg-0);
+  color: var(--text);
+  overflow-x: hidden;
+}
+
+#root {
+  height: 100vh;
+  overflow: hidden;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  color: var(--text-h);
+  font-weight: 600;
+  margin: 0;
+}
+
+button,
+select,
+input,
+textarea {
+  font-family: var(--sans);
+  color: var(--text-h);
+}
+
+button {
+  background: var(--bg-2);
+  border: 1px solid var(--border-strong);
+  color: var(--text-h);
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+button:hover:not(:disabled) {
+  background: var(--bg-3);
+  border-color: var(--accent-border);
+}
+
+button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+select {
+  background: var(--bg-2);
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 13px;
+}
+
+/* ---------------------------------------------------------------------- */
+/* App shell / layout                                                     */
+/* ---------------------------------------------------------------------- */
+.app {
+  display: grid;
+  /* The middle band (Variables/CallStack/Explanation/Complexity) used to be
+     `auto` here, meaning its row height tracked its content's natural size.
+     Since the page is a fixed 100vh grid, every time the Call Stack panel's
+     content grew or shrank (deeper vs. shallower recursion frames), that row
+     stole/returned space from .app-main -- visibly growing/shrinking the
+     Code editor on every step. Giving it a fixed proportional share (1fr)
+     instead makes its height stable; children already have `overflow: auto`
+     (see .app-middle-band > *) so a tall call stack scrolls internally
+     rather than resizing the row. */
+  grid-template-rows: auto minmax(0, 2fr) minmax(0, 1fr) auto;
+  height: 100vh;
+  gap: 10px;
+  padding: 10px;
+}
+
+.app-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 8px 14px;
+  background: var(--bg-1);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.app-header__title {
+  font-size: 16px;
+  white-space: nowrap;
+}
+
+.app-header__actions {
+  display: flex;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.app-main {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: minmax(0, 2fr) minmax(0, 1fr);
+  gap: 10px;
+  min-height: 0;
+}
+
+.app-panel {
+  background: var(--bg-1);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.app-panel--code {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+.app-panel--visual {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.app-panel--input {
+  grid-column: 1;
+  grid-row: 2;
+}
+
+.app-panel--output {
+  grid-column: 2;
+  grid-row: 2;
+}
+
+.app-panel__heading {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+}
+
+.app-panel__scroll {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
+.app-middle-band {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.app-middle-band > * {
+  min-width: 0;
+  overflow: auto;
+}
+
+.app-footer {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: var(--bg-1);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 14px;
+}
+
+/* Generic panel styling shared by VariablesPanel / CallStack / StepExplanation / Complexity */
+.panel {
+  background: var(--bg-1);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 13px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.panel__heading {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.panel__subheading {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  margin: 6px 0 2px;
+}
+
+.panel__empty-note {
+  color: var(--text-muted);
+  font-size: 12px;
+  margin: 0;
+}
+
+/* ---------------------------------------------------------------------- */
+/* Code editor                                                            */
+/* ---------------------------------------------------------------------- */
+.code-editor {
+  flex: 1;
+  min-height: 0;
+  border-radius: 6px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+
+.current-line-highlight {
+  background: var(--accent-bg) !important;
+}
+
+.current-line-gutter {
+  background: var(--accent) !important;
+  width: 3px !important;
+}
+
+/* ---------------------------------------------------------------------- */
+/* Input editor                                                           */
+/* ---------------------------------------------------------------------- */
+.input-editor {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.input-editor__textarea {
+  flex: 1;
+  min-height: 60px;
+  background: var(--bg-2);
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  color: var(--text-h);
+  font-family: var(--mono);
+  font-size: 12.5px;
+  padding: 8px 10px;
+  resize: none;
+}
+
+.input-editor__textarea--error {
+  border-color: var(--danger);
+}
+
+.input-editor__error {
+  color: var(--danger);
+  font-size: 12px;
+  margin: 4px 0 0;
+}
+
+/* ---------------------------------------------------------------------- */
+/* Output panel                                                          */
+/* ---------------------------------------------------------------------- */
+.output-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow: auto;
+}
+
+.output-panel__row {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.output-panel__label {
+  font-size: 11px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.output-panel__value {
+  font-family: var(--mono);
+  font-size: 12.5px;
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px 8px;
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.output-panel__match {
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: 4px 8px;
+  border-radius: 6px;
+  width: fit-content;
+}
+
+.output-panel__match--pass {
+  color: var(--success);
+  background: rgba(74, 222, 128, 0.12);
+}
+
+.output-panel__match--fail {
+  color: var(--danger);
+  background: rgba(248, 113, 113, 0.12);
+}
+
+/* ---------------------------------------------------------------------- */
+/* Error panel                                                            */
+/* ---------------------------------------------------------------------- */
+.error-panel {
+  border: 1px solid var(--danger);
+  background: rgba(248, 113, 113, 0.08);
+  border-radius: 8px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.error-panel__status {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 700;
+  color: var(--danger);
+}
+
+.error-panel__message {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-h);
+}
+
+.error-panel__line {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.error-panel__detail {
+  margin: 0;
+  font-family: var(--mono);
+  font-size: 12px;
+  background: var(--bg-2);
+  border-radius: 6px;
+  padding: 6px 8px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* ---------------------------------------------------------------------- */
+/* Key/value table (Variables / Generic fallback)                         */
+/* ---------------------------------------------------------------------- */
+.kv-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--mono);
+  font-size: 12.5px;
+}
+
+.kv-table__key {
+  color: var(--text-muted);
+  padding: 2px 8px 2px 0;
+  white-space: nowrap;
+  vertical-align: top;
+}
+
+.kv-table__value {
+  color: var(--text-h);
+  padding: 2px 0;
+  word-break: break-word;
+}
+
+/* ---------------------------------------------------------------------- */
+/* Variables panel structures section                                     */
+/* ---------------------------------------------------------------------- */
+.variables-panel__structures {
+  border-top: 1px solid var(--border);
+  padding-top: 4px;
+}
+
+.variables-panel__structure {
+  display: flex;
+  gap: 8px;
+  font-family: var(--mono);
+  font-size: 12px;
+  padding: 2px 0;
+}
+
+.variables-panel__structure-name em {
+  color: var(--text-muted);
+  font-style: normal;
+}
+
+.variables-panel__structure-values {
+  color: var(--text-h);
+}
+
+/* ---------------------------------------------------------------------- */
+/* Call stack                                                             */
+/* ---------------------------------------------------------------------- */
+.call-stack__frames {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.call-stack__frame {
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px 8px;
+}
+
+.call-stack__frame--current {
+  border-color: var(--accent-border);
+  background: var(--accent-bg);
+}
+
+.call-stack__frame-header {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--mono);
+  font-size: 12.5px;
+}
+
+.call-stack__frame-fn {
+  color: var(--text-h);
+  font-weight: 600;
+}
+
+.call-stack__frame-line {
+  color: var(--text-muted);
+}
+
+.call-stack__frame-locals {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+  font-family: var(--mono);
+  font-size: 11.5px;
+  color: var(--text-muted);
+}
+
+/* ---------------------------------------------------------------------- */
+/* Timeline / Controls                                                    */
+/* ---------------------------------------------------------------------- */
+.timeline {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.timeline__range {
+  flex: 1;
+  accent-color: var(--accent);
+}
+
+.timeline__label {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.controls__play-pause {
+  border-color: var(--accent-border);
+}
+
+.controls__speed {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+/* ---------------------------------------------------------------------- */
+/* Algorithm flow badges                                                  */
+/* ---------------------------------------------------------------------- */
+.algorithm-flow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.algorithm-flow__label {
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+}
+
+.algorithm-flow__none {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.algorithm-flow__badges {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.algorithm-flow__badge {
+  font-family: var(--mono);
+  font-size: 11.5px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: var(--accent-bg);
+  border: 1px solid var(--accent-border);
+  color: var(--accent-strong);
+}
+
+.algorithm-flow__badge--low-confidence {
+  background: transparent;
+  border-style: dashed;
+  border-color: var(--border-strong);
+  color: var(--text-muted);
+}
+
+/* ---------------------------------------------------------------------- */
+/* Step explanation                                                       */
+/* ---------------------------------------------------------------------- */
+.step-explanation__text {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-h);
+  line-height: 1.4;
+}
+
+.step-explanation__operation {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.step-explanation__operation-type {
+  font-family: var(--mono);
+  color: var(--accent-strong);
+  text-transform: uppercase;
+  font-size: 11px;
+}
+
+/* ---------------------------------------------------------------------- */
+/* Complexity                                                             */
+/* ---------------------------------------------------------------------- */
+.complexity__estimated-badge {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: var(--warning);
+  color: #241a00;
+  font-weight: 700;
+}
+
+.complexity__grid {
+  display: flex;
+  gap: 16px;
+}
+
+.complexity__cell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.complexity__cell-label {
+  font-size: 11px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+.complexity__cell-value {
+  font-family: var(--mono);
+  font-size: 14px;
+  color: var(--text-h);
+}
+
+.complexity__explanation {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+/* ---------------------------------------------------------------------- */
+/* Example picker                                                         */
+/* ---------------------------------------------------------------------- */
+.example-picker__label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+/* ---------------------------------------------------------------------- */
+/* Visualizer panels (shared shell for Array/String/Generic/stub)         */
+/* ---------------------------------------------------------------------- */
+.visualizer-dispatcher {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.visualizer-panel {
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+
+.visualizer-panel--stub {
+  opacity: 0.6;
+}
+
+.visualizer-panel__header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.visualizer-panel__title {
+  font-family: var(--mono);
+  font-size: 12.5px;
+  color: var(--text-h);
+  font-weight: 600;
+}
+
+.visualizer-panel__badge {
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  padding: 1px 7px;
+}
+
+.visualizer-panel__body {
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+/* Generic visualizer */
+.generic-visualizer--empty {
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.generic-visualizer__values,
+.generic-visualizer__pointers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.generic-visualizer__pointers {
+  margin-top: 8px;
+}
+
+.generic-visualizer__chip {
+  font-family: var(--mono);
+  font-size: 12px;
+  background: var(--bg-3);
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  padding: 3px 8px;
+  color: var(--text-h);
+}
+
+.generic-visualizer__chip--pointer {
+  color: var(--accent-strong);
+  border-color: var(--accent-border);
+}
+
+.generic-visualizer__empty-note {
+  color: var(--text-muted);
+  font-size: 12px;
+  margin: 0;
+}
+
+/* ---------------------------------------------------------------------- */
+/* Cell row (Array / String visualizers)                                  */
+/* ---------------------------------------------------------------------- */
+.cell-row {
+  position: relative;
+  font-family: var(--mono);
+}
+
+.cell-row__pointers {
+  position: relative;
+  margin-bottom: 4px;
+}
+
+.cell-row__pointer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transform: translateX(-50%);
+  color: var(--accent-strong);
+}
+
+.cell-row__pointer-arrow {
+  font-size: 12px;
+  line-height: 1;
+}
+
+.cell-row__pointer-label {
+  font-size: 10.5px;
+  white-space: nowrap;
+}
+
+.cell-row__cells {
+  display: flex;
+  gap: 6px;
+}
+
+.cell-row__cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-3);
+  border: 1.5px solid var(--border-strong);
+  border-radius: 6px;
+  font-size: 14px;
+  color: var(--text-h);
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.cell-row__cell--current {
+  border-color: var(--accent);
+  background: var(--accent-bg);
+  color: var(--accent-strong);
+}
+
+.cell-row__cell--active {
+  border-color: var(--accent-border);
+  background: var(--accent-bg);
+}
+
+.cell-row__cell--visited {
+  border-color: var(--visited-border);
+  background: var(--visited-bg);
+  color: var(--visited);
+}
+
+.cell-row__indices {
+  display: flex;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.cell-row__index {
+  text-align: center;
+  font-size: 10.5px;
+  color: var(--text-muted);
+}
+
+.cell-row__window {
+  position: absolute;
+  bottom: -20px;
+  height: 2px;
+  background: var(--visited);
+  border-radius: 2px;
+}
+
+.cell-row__window-label {
+  position: absolute;
+  top: 4px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 9.5px;
+  letter-spacing: 0.05em;
+  color: var(--visited);
+  white-space: nowrap;
+}
